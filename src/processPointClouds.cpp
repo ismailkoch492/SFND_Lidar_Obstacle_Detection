@@ -311,30 +311,6 @@ std::vector<typename pcl::PointCloud<PointT>::Ptr> ProcessPointClouds<PointT>::C
 template<typename PointT>
 Box ProcessPointClouds<PointT>::BoundingBox(typename pcl::PointCloud<PointT>::Ptr cluster)
 {
-
-    // Find bounding box for one of the clusters
-    /*
-    Eigen::Vector4f centPCA;
-    pcl::compute3DCentroid(*cluster, centPCA);
-    Eigen::Matrix3f cov;
-    pcl::computeCovarianceMatrixNormalized(*cluster, centPCA, cov);
-    Eigen::SelfAdjointEigenSolver<Eigen::Matrix3f> eigen_solver(cov, Eigen::ComputeEigenvectors);
-    Eigen::Matrix3f eigVecsPCA = eigen_solver.eigenvectors();
-    eigVecsPCA.col(2) = eigVecsPCA.col(0).cross(eigVecsPCA.col(1));
-
-    Eigen::Matrix4f projTran(Eigen::Matrix4f::Identity());
-    projTran.block<3,3>(0,0) = eigVecsPCA.transpose();
-    projTran.block<3,1>(0,3) = -1.f * (projTran.block<3,3>(0,0) * centPCA.head<3>());
-    typename pcl::PointCloud<PointT>::Ptr projPCL (new pcl::PointCloud<PointT>);
-    pcl::transformPointCloud(*cluster, *projPCL, projTran);
-
-    PointT minPoint, maxPoint;
-    pcl::getMinMax3D(*projPCL, minPoint, maxPoint);
-    const Eigen::Vector3f meanDiag = 0.5f*(maxPoint.getVector3fMap() + minPoint.getVector3fMap());
-
-    //const Eigen::Quaternionf pcaQuaternion(eigVecsPCA);
-    const Eigen::Vector3f pcaTransform = eigVecsPCA * meanDiag + centPCA.head<3>();
-    */
     PointT minPoint, maxPoint;
     pcl::getMinMax3D(*cluster, minPoint, maxPoint);
 
@@ -393,35 +369,6 @@ BoxQ ProcessPointClouds<PointT>::PCABoundingBox(typename pcl::PointCloud<PointT>
     const Eigen::Quaternionf pcaQuaternion(eigVecsPCA);
     const Eigen::Vector3f pcaTransform = eigVecsPCA * meanDiag + centPCA.head<3>();
 
-    // https://en.wikipedia.org/wiki/Conversion_between_quaternions_and_Euler_angles
-
-    const float q[] = {pcaQuaternion.w(), pcaQuaternion.x(), pcaQuaternion.y(), pcaQuaternion.z()};
-
-    float qua2eu[] = {std::atan2( 2 * (q[0] * q[1] + q[2] * q[3]) , 1 - 2 * (q[1] * q[1] + q[2] * q[2]) ),
-                            0,
-                            std::atan2( 2 * (q[0] * q[3] + q[1] * q[2]) , 1 - 2 * (q[2] * q[2] + q[3] * q[3]) ) };
-    
-    if(std::abs(2 * (q[0] * q[2] - q[3] * q[1])) >= 1)
-        qua2eu[1] = std::copysign(M_PI / 2, 2 * (q[0] * q[2] - q[3] * q[1]));
-    else
-        qua2eu[1] = std::asin( 2 * (q[0] * q[2] - q[3] * q[1]) );
-    
-    /*
-
-    float qua2eu[] = {std::atan2( 2 * ( pcaQuaternion.w() * pcaQuaternion.x()  + pcaQuaternion.y() * pcaQuaternion.z() ), 
-                            1 - 2 * ( pcaQuaternion.x() * pcaQuaternion.x()  + pcaQuaternion.y() * pcaQuaternion.y() ) ),
-                    std::asin(2 * ( pcaQuaternion.w() * pcaQuaternion.y()  + pcaQuaternion.z() * pcaQuaternion.x() ) ),
-                    std::atan2(2 * ( pcaQuaternion.w() * pcaQuaternion.z()  + pcaQuaternion.x() * pcaQuaternion.y() ), 
-                            1 - 2 * ( pcaQuaternion.y() * pcaQuaternion.y()  + pcaQuaternion.z() * pcaQuaternion.z() ) ) };
-    */
-    Eigen::Quaternionf eu2qua;
-
-    eu2qua = Eigen::AngleAxisf(qua2eu[0], Eigen::Vector3f::UnitX())
-            * Eigen::AngleAxisf(qua2eu[1], Eigen::Vector3f::UnitY())
-            * Eigen::AngleAxisf(qua2eu[2], Eigen::Vector3f::UnitZ())
-            * Eigen::AngleAxisf(-qua2eu[1], Eigen::Vector3f::UnitY()) 
-            * Eigen::AngleAxisf(-qua2eu[0], Eigen::Vector3f::UnitX());
-
     /*box.h
     struct BoxQ
     {
@@ -438,8 +385,7 @@ BoxQ ProcessPointClouds<PointT>::PCABoundingBox(typename pcl::PointCloud<PointT>
     box.cube_height = std::abs(minPoint.z - maxPoint.z);
     box.cube_width = std::abs(minPoint.y - maxPoint.y);
     box.bboxTransform  = pcaTransform;
-    //box.bboxQuaternion = pcaQuaternion;
-    box.bboxQuaternion = eu2qua;
+    box.bboxQuaternion = pcaQuaternion;
     return box;
 }
 
