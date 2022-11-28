@@ -16,9 +16,13 @@ pcl::visualization::PCLVisualizer::Ptr initScene(Box window, int zoom)
 	viewer->setBackgroundColor (0, 0, 0);
   	viewer->initCameraParameters();
   	viewer->setCameraPosition(0, 0, zoom, 0, 1, 0);
-  	viewer->addCoordinateSystem (1.0);
+  	//viewer->addCoordinateSystem (1.0);
 
-  	viewer->addCube(window.x_min, window.x_max, window.y_min, window.y_max, 0, 0, 1, 1, 1, "window");
+  	viewer->addCube(window.x_min, window.x_max, window.y_min, window.y_max, 0, 0, 0.09, 0.09, 0.09, "window");
+	viewer->setBackgroundColor (0, 0, 0);
+	//viewer->setShapeRenderingProperties ( pcl::visualization::PCL_VISUALIZER_COLOR, 0.5, 0.5, 0, "window" );
+	//viewer->setShapeRenderingProperties ( pcl::visualization::PCL_VISUALIZER_SHADING, pcl::visualization::PCL_VISUALIZER_SHADING_GOURAUD, "window" );
+	//viewer->setShapeRenderingProperties ( pcl::visualization::PCL_VISUALIZER_OPACITY, 20, "window" );
   	return viewer;
 }
 
@@ -75,12 +79,44 @@ void render2DTree(Node* node, pcl::visualization::PCLVisualizer::Ptr& viewer, Bo
 
 }
 
-std::vector<std::vector<int>> euclideanCluster(const std::vector<std::vector<float>>& points, KdTree* tree, float distanceTol)
+
+void clusterHelper(int indice, const std::vector<std::vector<float>>& points, 
+	std::vector<int>& cluster, std::vector<bool>& processed, KdTree* tree, float distanceTol)
 {
+	processed[indice]= true;
+	cluster.push_back(indice);
 
+	std::vector<int> nearest = tree->search(points[indice], distanceTol);
+
+	for(int id : nearest)
+	{
+		if(!processed[id])
+			clusterHelper(id, points, cluster, processed, tree, distanceTol);
+	}
+}
+
+
+std::vector<std::vector<int>> 
+euclideanCluster(const std::vector<std::vector<float>>& points, KdTree* tree, float distanceTol)
+{
 	// TODO: Fill out this function to return list of indices for each cluster
-
+	// list of clusters
 	std::vector<std::vector<int>> clusters;
+	std::vector<bool> processed(points.size(), false);
+	// Iterate through each point
+	for(int i = 0; i < points.size(); i++)
+	{	
+		// If point has not been processed
+		if(!processed[i])
+		{
+			// Create cluster
+			std::vector<int> cluster;
+			// Proximity(point, cluster)
+			clusterHelper(i, points, cluster, processed, tree, distanceTol);
+			// cluster add clusters
+			clusters.push_back(cluster);
+		}
+	}
  
 	return clusters;
 

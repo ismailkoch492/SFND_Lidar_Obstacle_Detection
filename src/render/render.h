@@ -4,6 +4,7 @@
 
 #ifndef RENDER_H
 #define RENDER_H
+//#include <pcl-1.10/pcl/visualization/pcl_visualizer.h>
 #include <pcl/visualization/pcl_visualizer.h>
 #include "box.h"
 #include <iostream>
