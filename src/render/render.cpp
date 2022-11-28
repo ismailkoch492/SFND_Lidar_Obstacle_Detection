@@ -44,7 +44,7 @@ void renderPointCloud(pcl::visualization::PCLVisualizer::Ptr& viewer, const pcl:
 {
 
   	viewer->addPointCloud<pcl::PointXYZ> (cloud, name);
-  	viewer->setPointCloudRenderingProperties (pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 4, name);
+  	viewer->setPointCloudRenderingProperties (pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 5, name);
   	viewer->setPointCloudRenderingProperties (pcl::visualization::PCL_VISUALIZER_COLOR, color.r, color.g, color.b, name);
 }
 
