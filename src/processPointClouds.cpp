@@ -329,25 +329,43 @@ template<typename PointT>
 BoxQ ProcessPointClouds<PointT>::PCABoundingBox(typename pcl::PointCloud<PointT>::Ptr cluster)
 {
     // Source: http://codextechnicanum.blogspot.com/2015/04/find-minimum-oriented-bounding-box-of.html
-    /*
+    
     // Note that getting the eigenvectors can also be obtained via the PCL PCA interface with something like:
-    pcl::PointCloud<PointT>::Ptr cloudPCAprojection (new pcl::PointCloud<PointT>);
-    pcl::PointCloud<PointT>::Ptr cloudPCAreconst (new pcl::PointCloud<PointT>);
+    typename pcl::PointCloud<PointT>::Ptr cloudPCAprojection (new pcl::PointCloud<PointT>);
+    typename pcl::PointCloud<PointT>::Ptr cloudPCAreconst (new pcl::PointCloud<PointT>);
     pcl::PCA<PointT> pca, reconst;
     pca.setInputCloud(cluster);
     pca.project(*cluster, *cloudPCAprojection);
     pca.reconstruct(*cloudPCAprojection, *cloudPCAreconst);
-    std::cerr << std::endl << "EigenVectors: " << pca.getEigenVectors() << std::endl;
-    std::cerr << std::endl << "EigenValues: " << pca.getEigenValues() << std::endl;
-    const Eigen::Quaternionf pcaQuaternion(pca.getEigenVectors());
+    //std::cerr << std::endl << "EigenVectors: " << pca.getEigenVectors() << std::endl;
+    //std::cerr << std::endl << "EigenValues: " << pca.getEigenValues() << std::endl;
     // In this case, pca.getEigenVectors() gives similar eigenVectors to eigenVectorsPCA.
+
+    Eigen::Vector4f centPCA;
+    pcl::compute3DCentroid(*cluster, centPCA);
+    Eigen::Matrix4f projTran(Eigen::Matrix4f::Identity());
+    projTran.block<3,3>(0,0) = pca.getEigenVectors().transpose();
+    projTran.block<3,1>(0,3) = -1.f * (projTran.block<3,3>(0,0) * centPCA.head<3>());
+    typename pcl::PointCloud<PointT>::Ptr projPCL (new pcl::PointCloud<PointT>);
+    pcl::transformPointCloud(*cluster, *projPCL, projTran);
+
+    PointT minPoint, maxPoint;
+    pcl::getMinMax3D(*projPCL, minPoint, maxPoint);
+    const Eigen::Vector3f meanDiag = 0.5f*(maxPoint.getVector3fMap() + minPoint.getVector3fMap());
+
+    const Eigen::Quaternionf pcaQuaternion(pca.getEigenVectors());
+    const Eigen::Vector3f pcaTransform = pca.getEigenVectors() * meanDiag + centPCA.head<3>();
+
     BoxQ box;
-    box.cube_length = ??;
-    box.cube_height = ??;
-    box.cube_width = ??;
-    box.bboxTransform  = ??;
+    box.cube_length = std::abs(minPoint.x - maxPoint.x);
+    box.cube_height = std::abs(minPoint.z - maxPoint.z);
+    box.cube_width = std::abs(minPoint.y - maxPoint.y);
+    box.bboxTransform  = pcaTransform;
     box.bboxQuaternion = pcaQuaternion;
-    */
+
+    return box;
+    
+    /*
     Eigen::Vector4f centPCA;
     pcl::compute3DCentroid(*cluster, centPCA);
     Eigen::Matrix3f cov;
@@ -368,7 +386,7 @@ BoxQ ProcessPointClouds<PointT>::PCABoundingBox(typename pcl::PointCloud<PointT>
 
     const Eigen::Quaternionf pcaQuaternion(eigVecsPCA);
     const Eigen::Vector3f pcaTransform = eigVecsPCA * meanDiag + centPCA.head<3>();
-
+    */
     /*box.h
     struct BoxQ
     {
@@ -379,14 +397,16 @@ BoxQ ProcessPointClouds<PointT>::PCABoundingBox(typename pcl::PointCloud<PointT>
         float cube_height;
     };
     */
-
+    /*
     BoxQ box;
     box.cube_length = std::abs(minPoint.x - maxPoint.x);
     box.cube_height = std::abs(minPoint.z - maxPoint.z);
     box.cube_width = std::abs(minPoint.y - maxPoint.y);
     box.bboxTransform  = pcaTransform;
     box.bboxQuaternion = pcaQuaternion;
+    
     return box;
+    */
 }
 
 template<typename PointT>

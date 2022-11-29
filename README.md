@@ -1,16 +1,16 @@
-# Sensor Fusion Self-Driving Car Course
+# Sensor Fusion Nanodegree - LiDAR Obstacle Detection Project
 
 <img src="media/ObstacleDetectionFPS.gif" width="700" height="400" />
 
-### Welcome to the Sensor Fusion course for self-driving cars.
-
-In this course we will be talking about sensor fusion, whch is the process of taking data from multiple sensors and combining it to give us a better understanding of the world around us. we will mostly be focusing on two sensors, lidar, and radar. By the end we will be fusing the data from these two sensors to track multiple cars on the road, estimating their positions and speed.
+## Sensing with LiDAR
 
 **Lidar** sensing gives us high resolution data by sending out thousands of laser signals. These lasers bounce off objects, returning to the sensor where we can then determine how far away objects are by timing how long it takes for the signal to return. Also we can tell a little bit about the object that was hit by measuring the intesity of the returned signal. Each laser ray is in the infrared spectrum, and is sent out at many different angles, usually in a 360 degree range. While lidar sensors gives us very high accurate models for the world around us in 3D, they are currently very expensive, upwards of $60,000 for a standard unit.
 
-**Radar** data is typically very sparse and in a limited range, however it can directly tell us how fast an object is moving in a certain direction. This ability makes radars a very pratical sensor for doing things like cruise control where its important to know how fast the car infront of you is traveling. Radar sensors are also very affordable and common now of days in newer cars.
+## This Project Includes
 
-**Sensor Fusion** by combing lidar's high resolution imaging with radar's ability to measure velocity of objects we can get a better understanding of the sorrounding environment than we could using one of the sensors alone.
+* Custom 3-D random sample consensus (RANSAC) algorithm to segment ground plane from obstacles.
+* Clustering obstacles with euclidean distance clustering by using KD-Tree (k=3) data structure and nearest neighbor search algorithm.
+* Obstacles are bounded with box.
 
 ## Classroom Workspace
 
@@ -26,40 +26,24 @@ The workspace provided in the SFND classroom comes preinstallated with everythin
 
 ## Local Installation
 
-### Ubuntu 
+### Ubuntu
 
-1. Clone this github repo:
+1. Clone this github repo
+
+   Xenial-Trusty
 
    ```sh
    cd ~
-   git clone https://github.com/udacity/SFND_Lidar_Obstacle_Detection.git
+   git clone -b xenial-trusty https://github.com/ismailkoch492/SFND_Lidar_Obstacle_Detection.git
+   ```
+   Bionic-Focal-Jammy
+   ```sh
+   cd ~
+   git clone https://github.com/ismailkoch492/SFND_Lidar_Obstacle_Detection.git
    ```
 
-2.  Edit [CMakeLists.txt](https://github.com/udacity/SFND_Lidar_Obstacle_Detection/blob/master/CMakeLists.txt) as follows:
 
-   ```cmake
-   cmake_minimum_required(VERSION 2.8 FATAL_ERROR)
-   
-   add_definitions(-std=c++14)
-   
-   set(CXX_FLAGS "-Wall")
-   set(CMAKE_CXX_FLAGS, "${CXX_FLAGS}")
-   
-   project(playback)
-   
-   find_package(PCL 1.11 REQUIRED)
-   
-   include_directories(${PCL_INCLUDE_DIRS})
-   link_directories(${PCL_LIBRARY_DIRS})
-   add_definitions(${PCL_DEFINITIONS})
-   list(REMOVE_ITEM PCL_LIBRARIES "vtkproj4")
-   
-   
-   add_executable (environment src/environment.cpp src/render/render.cpp src/processPointClouds.cpp)
-   target_link_libraries (environment ${PCL_LIBRARIES})
-   ```
-
-3. Execute the following commands in a terminal
+2. Execute the following commands in a terminal
 
    ```shell
    sudo apt install libpcl-dev
@@ -74,8 +58,9 @@ The workspace provided in the SFND classroom comes preinstallated with everythin
    
 **Note** The library version of PCL being distributed by the apt repository for 18.04 and 20.04 are both older than v1.11. The following links have the information regarding the versions-
 
-[Bionic 18.04](https://www.ubuntuupdates.org/package/core/bionic/universe/updates/libpcl-dev)
-[Focal 20.04](https://www.ubuntuupdates.org/package/core/focal/universe/base/libpcl-dev)
+* [Bionic 18.04](https://www.ubuntuupdates.org/package/core/bionic/universe/updates/libpcl-dev)
+
+* [Focal 20.04](https://www.ubuntuupdates.org/package/core/focal/universe/base/libpcl-dev)
 
 You can either build PCL from source (for v1.11) or use the older version.
 
@@ -104,7 +89,7 @@ You can either build PCL from source (for v1.11) or use the older version.
 
    ```shell
    cd ~
-   git clone https://github.com/udacity/SFND_Lidar_Obstacle_Detection.git
+   git clone https://github.com/ismailkoch492/SFND_Lidar_Obstacle_Detection.git
    ```
 
 7. Edit the CMakeLists.txt file as shown in Step 2 of Ubuntu installation instructions above.
@@ -130,7 +115,7 @@ If you get build errors related to Qt5, make sure that the path for Qt5 is corre
 
    ```shell
    cd ~
-   git clone https://github.com/udacity/SFND_Lidar_Obstacle_Detection.git
+   git clone https://github.com/ismailkoch492/SFND_Lidar_Obstacle_Detection.git
    ```
 
 3. Edit the CMakeLists.txt file as shown in Step 2 of Ubuntu installation instructions above.
