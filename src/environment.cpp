@@ -197,6 +197,7 @@ void cityBlock(pcl::visualization::PCLVisualizer::Ptr& viewer,
                 {  
                     // Box box = pointProcessorI->BoundingBox(cluster);
                     BoxQ box = pointProcessorI->PCABoundingBox(cluster);
+                    //BoxQ box = pointProcessorI->customPCABoundingBox(cluster);
                     renderBox(viewer, box, clusterId);
                 }
                 clusterId++;

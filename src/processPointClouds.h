@@ -13,6 +13,7 @@
 #include <pcl/segmentation/sac_segmentation.h>
 #include <pcl/segmentation/extract_clusters.h>
 #include <pcl/common/transforms.h>
+#include <pcl/filters/project_inliers.h>
 #include <iostream>
 #include <unordered_set> 
 #include <string>  
@@ -124,8 +125,10 @@ public:
 
     Box BoundingBox(typename pcl::PointCloud<PointT>::Ptr cluster);
 
+	BoxQ customPCABoundingBox(typename pcl::PointCloud<PointT>::Ptr cluster);
+	
 	BoxQ PCABoundingBox(typename pcl::PointCloud<PointT>::Ptr cluster);
-
+	
     void savePcd(typename pcl::PointCloud<PointT>::Ptr cloud, std::string file);
 
     typename pcl::PointCloud<PointT>::Ptr loadPcd(std::string file);

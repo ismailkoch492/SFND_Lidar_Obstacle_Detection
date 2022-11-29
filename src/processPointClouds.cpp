@@ -350,6 +350,80 @@ Box ProcessPointClouds<PointT>::BoundingBox(typename pcl::PointCloud<PointT>::Pt
 }
 
 template<typename PointT>
+BoxQ ProcessPointClouds<PointT>::customPCABoundingBox(typename pcl::PointCloud<PointT>::Ptr cluster)
+{
+    typename pcl::PointCloud<PointT>::Ptr cluster2d (new pcl::PointCloud<PointT>);
+    float max_height = -10.0;
+    float min_height = 100.0;
+
+    pcl::PointCloud<pcl::Point>
+    /*
+    
+    cluster2d ->width = cluster->width;
+    cluster2d ->height = cluster->height;
+    cluster2d ->is_dense = cluster->is_dense;
+    cluster2d ->points.resize(cluster->width * cluster->height);
+*/
+    for(int i = 0; i < cluster->points.size(); i++)
+    {
+        if(max_height < cluster->points[i].z)
+            max_height = cluster->points[i].z;
+        if(min_height > cluster->points[i].z)
+            min_height = cluster->points[i].z;
+    }
+        
+    /*    //cluster2d->push_back(cluster->points[i]);
+        cluster2d->points[i].x=cluster->points[i].x;
+        cluster2d->points[i].y=cluster->points[i].y;
+        cluster2d->points[i].z=0.0;
+    }
+
+    */
+
+    pcl::ModelCoefficients::Ptr coefficients (new pcl::ModelCoefficients ());
+    coefficients->values.resize (4);
+    coefficients->values[0] = coefficients->values[1] = 0;
+    coefficients->values[2] = 1.0;
+    coefficients->values[3] = 0;
+
+    pcl::ProjectInliers<PointT> proj;
+    proj.setModelType (pcl::SACMODEL_PLANE);
+    proj.setInputCloud (cluster);
+    proj.setModelCoefficients (coefficients);
+    proj.filter (*cluster2d);
+
+    Eigen::Vector4f centPCA;
+    pcl::compute3DCentroid(*cluster2d, centPCA);
+    Eigen::Matrix3f cov;
+    pcl::computeCovarianceMatrixNormalized(*cluster2d, centPCA, cov);
+    Eigen::SelfAdjointEigenSolver<Eigen::Matrix3f> eigen_solver(cov, Eigen::ComputeEigenvectors);
+    Eigen::Matrix3f eigVecsPCA = eigen_solver.eigenvectors();
+    eigVecsPCA.col(2) = eigVecsPCA.col(0).cross(eigVecsPCA.col(1));
+
+    Eigen::Matrix4f projTran(Eigen::Matrix4f::Identity());
+    projTran.block<3,3>(0,0) = eigVecsPCA.transpose();
+    projTran.block<3,1>(0,3) = -1.f * (projTran.block<3,3>(0,0) * centPCA.head<3>());
+    typename pcl::PointCloud<PointT>::Ptr projPCL (new pcl::PointCloud<PointT>);
+    pcl::transformPointCloud(*cluster2d, *projPCL, projTran);
+
+    PointT minPoint, maxPoint;
+    pcl::getMinMax3D(*projPCL, minPoint, maxPoint);
+    const Eigen::Vector3f meanDiag = 0.5f*(maxPoint.getVector3fMap() + minPoint.getVector3fMap());
+
+    const Eigen::Quaternionf pcaQuaternion(eigVecsPCA);
+    const Eigen::Vector3f pcaTransform = eigVecsPCA * meanDiag + centPCA.head<3>();
+
+    BoxQ box;
+    box.cube_length = maxPoint.z - minPoint.z;
+    //box.cube_height = std::abs(minPoint.z - maxPoint.z);
+    box.cube_height = max_height - min_height;
+    box.cube_width = maxPoint.y - minPoint.y;
+    box.bboxTransform  = pcaTransform;
+    box.bboxQuaternion = pcaQuaternion;
+    return box;
+}
+
+template<typename PointT>
 BoxQ ProcessPointClouds<PointT>::PCABoundingBox(typename pcl::PointCloud<PointT>::Ptr cluster)
 {
     // Source: http://codextechnicanum.blogspot.com/2015/04/find-minimum-oriented-bounding-box-of.html
@@ -364,6 +438,23 @@ BoxQ ProcessPointClouds<PointT>::PCABoundingBox(typename pcl::PointCloud<PointT>
     std::cerr << std::endl << "EigenVectors: " << pca.getEigenVectors() << std::endl;
     std::cerr << std::endl << "EigenValues: " << pca.getEigenValues() << std::endl;
     const Eigen::Quaternionf pcaQuaternion(pca.getEigenVectors());
+    
+    Eigen::Vector4f centPCA;
+    pcl::compute3DCentroid(*cluster, centPCA);
+    Eigen::Matrix4f projTran(Eigen::Matrix4f::Identity());
+    projTran.block<3,3>(0,0) = pca.getEigenVectors().transpose();
+    projTran.block<3,1>(0,3) = -1.f * (projTran.block<3,3>(0,0) * centPCA.head<3>());
+    typename pcl::PointCloud<PointT>::Ptr projPCL (new pcl::PointCloud<PointT>);
+    pcl::transformPointCloud(*cluster, *projPCL, projTran);
+
+    PointT minPoint, maxPoint;
+    pcl::getMinMax3D(*projPCL, minPoint, maxPoint);
+
+    const Eigen::Vector3f meanDiag = 0.5f*(maxPoint.getVector3fMap() + minPoint.getVector3fMap());
+
+    const Eigen::Quaternionf pcaQuaternion(eigVecsPCA);
+    const Eigen::Vector3f pcaTransform = eigVecsPCA * meanDiag + centPCA.head<3>();
+    
     // In this case, pca.getEigenVectors() gives similar eigenVectors to eigenVectorsPCA.
     BoxQ box;
     box.cube_length = ??;
