@@ -176,7 +176,7 @@ void cityBlock(pcl::visualization::PCLVisualizer::Ptr& viewer,
         case Segmented:
         {
             filterCloud = pointProcessorI->FilterCloud(inputCloud, 0.2, Eigen::Vector4f (-10, -6, -3, 1), Eigen::Vector4f (50, 7, 1000, 1));
-            std::pair<pcl::PointCloud<pcl::PointXYZI>::Ptr, pcl::PointCloud<pcl::PointXYZI>::Ptr> segmentCloud = pointProcessorI->SegmentPlane(filterCloud, 500, 0.2); // Slower with CustomRANSAC !!!
+            std::pair<pcl::PointCloud<pcl::PointXYZI>::Ptr, pcl::PointCloud<pcl::PointXYZI>::Ptr> segmentCloud = pointProcessorI->CustomRANSAC(filterCloud, 500, 0.2); // Slower with CustomRANSAC !!!
             std::vector<pcl::PointCloud<pcl::PointXYZI>::Ptr> cloudClusters = pointProcessorI->Clustering(segmentCloud.first, 0.5, 20, 1500);
 
             int clusterId = 0;
@@ -195,8 +195,8 @@ void cityBlock(pcl::visualization::PCLVisualizer::Ptr& viewer,
                 }
                 if(render_box)
                 {  
-                    // Box box = pointProcessorI->BoundingBox(cluster);
-                    BoxQ box = pointProcessorI->PCABoundingBox(cluster);
+                    Box box = pointProcessorI->BoundingBox(cluster);
+                    //BoxQ box = pointProcessorI->PCABoundingBox(cluster);
                     renderBox(viewer, box, clusterId);
                 }
                 clusterId++;
@@ -256,7 +256,7 @@ int main (int argc, char** argv)
         case realCloud:
         {
             ProcessPointClouds<pcl::PointXYZI>* pointProcessorI = new ProcessPointClouds<pcl::PointXYZI>();
-            std::vector<boost::filesystem::path> stream = pointProcessorI->streamPcd("../src/sensors/data/pcd/data_1");
+            std::vector<boost::filesystem::path> stream = pointProcessorI->streamPcd("../src/sensors/data/pcd/data_1", argv);
             auto streamIterator = stream.begin();
             pcl::PointCloud<pcl::PointXYZI>::Ptr inputCloudI;
             //cityBlock(viewer, pointProcessorI, inputCloudI); //CustomRANSAC: Floating point exception (core dumped) due to empty point cloud

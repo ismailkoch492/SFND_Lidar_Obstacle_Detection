@@ -329,25 +329,43 @@ template<typename PointT>
 BoxQ ProcessPointClouds<PointT>::PCABoundingBox(typename pcl::PointCloud<PointT>::Ptr cluster)
 {
     // Source: http://codextechnicanum.blogspot.com/2015/04/find-minimum-oriented-bounding-box-of.html
-    /*
+    
     // Note that getting the eigenvectors can also be obtained via the PCL PCA interface with something like:
-    pcl::PointCloud<PointT>::Ptr cloudPCAprojection (new pcl::PointCloud<PointT>);
-    pcl::PointCloud<PointT>::Ptr cloudPCAreconst (new pcl::PointCloud<PointT>);
+    typename pcl::PointCloud<PointT>::Ptr cloudPCAprojection (new pcl::PointCloud<PointT>);
+    typename pcl::PointCloud<PointT>::Ptr cloudPCAreconst (new pcl::PointCloud<PointT>);
     pcl::PCA<PointT> pca, reconst;
     pca.setInputCloud(cluster);
     pca.project(*cluster, *cloudPCAprojection);
     pca.reconstruct(*cloudPCAprojection, *cloudPCAreconst);
-    std::cerr << std::endl << "EigenVectors: " << pca.getEigenVectors() << std::endl;
-    std::cerr << std::endl << "EigenValues: " << pca.getEigenValues() << std::endl;
-    const Eigen::Quaternionf pcaQuaternion(pca.getEigenVectors());
+    //std::cerr << std::endl << "EigenVectors: " << pca.getEigenVectors() << std::endl;
+    //std::cerr << std::endl << "EigenValues: " << pca.getEigenValues() << std::endl;
     // In this case, pca.getEigenVectors() gives similar eigenVectors to eigenVectorsPCA.
+
+    Eigen::Vector4f centPCA;
+    pcl::compute3DCentroid(*cluster, centPCA);
+    Eigen::Matrix4f projTran(Eigen::Matrix4f::Identity());
+    projTran.block<3,3>(0,0) = pca.getEigenVectors().transpose();
+    projTran.block<3,1>(0,3) = -1.f * (projTran.block<3,3>(0,0) * centPCA.head<3>());
+    typename pcl::PointCloud<PointT>::Ptr projPCL (new pcl::PointCloud<PointT>);
+    pcl::transformPointCloud(*cluster, *projPCL, projTran);
+
+    PointT minPoint, maxPoint;
+    pcl::getMinMax3D(*projPCL, minPoint, maxPoint);
+    const Eigen::Vector3f meanDiag = 0.5f*(maxPoint.getVector3fMap() + minPoint.getVector3fMap());
+
+    const Eigen::Quaternionf pcaQuaternion(pca.getEigenVectors());
+    const Eigen::Vector3f pcaTransform = pca.getEigenVectors() * meanDiag + centPCA.head<3>();
+
     BoxQ box;
-    box.cube_length = ??;
-    box.cube_height = ??;
-    box.cube_width = ??;
-    box.bboxTransform  = ??;
+    box.cube_length = std::abs(minPoint.x - maxPoint.x);
+    box.cube_height = std::abs(minPoint.z - maxPoint.z);
+    box.cube_width = std::abs(minPoint.y - maxPoint.y);
+    box.bboxTransform  = pcaTransform;
     box.bboxQuaternion = pcaQuaternion;
-    */
+
+    return box;
+    
+    /*
     Eigen::Vector4f centPCA;
     pcl::compute3DCentroid(*cluster, centPCA);
     Eigen::Matrix3f cov;
@@ -368,7 +386,7 @@ BoxQ ProcessPointClouds<PointT>::PCABoundingBox(typename pcl::PointCloud<PointT>
 
     const Eigen::Quaternionf pcaQuaternion(eigVecsPCA);
     const Eigen::Vector3f pcaTransform = eigVecsPCA * meanDiag + centPCA.head<3>();
-
+    */
     /*box.h
     struct BoxQ
     {
@@ -379,14 +397,16 @@ BoxQ ProcessPointClouds<PointT>::PCABoundingBox(typename pcl::PointCloud<PointT>
         float cube_height;
     };
     */
-
+    /*
     BoxQ box;
     box.cube_length = std::abs(minPoint.x - maxPoint.x);
     box.cube_height = std::abs(minPoint.z - maxPoint.z);
     box.cube_width = std::abs(minPoint.y - maxPoint.y);
     box.bboxTransform  = pcaTransform;
     box.bboxQuaternion = pcaQuaternion;
+    
     return box;
+    */
 }
 
 template<typename PointT>
@@ -414,11 +434,50 @@ typename pcl::PointCloud<PointT>::Ptr ProcessPointClouds<PointT>::loadPcd(std::s
 
 
 template<typename PointT>
-std::vector<boost::filesystem::path> ProcessPointClouds<PointT>::streamPcd(std::string dataPath)
+std::vector<boost::filesystem::path> ProcessPointClouds<PointT>::streamPcd(std::string dataPath, char** argv)
 {
+    boost::filesystem::path complete_path(boost::filesystem::system_complete(argv[0]));
+    boost::filesystem::path data_path;
+    std::vector<std::string> folders; 
+    std::string token;
+    size_t pos = 0;
+    
+    // https://stackoverflow.com/questions/14265581/parse-split-a-string-in-c-using-string-delimiter-standard-c
+    while ((pos = dataPath.find("/")) != std::string::npos)
+    {
+        token = dataPath.substr(0, pos);
+        folders.push_back(token);
+        dataPath.erase(0, pos + 1);
+    }
+    folders.push_back(dataPath);
+    
+    // https://www.boost.org/doc/libs/1_77_0/libs/filesystem/doc/tutorial.html
+    // https://www.boost.org/doc/libs/1_68_0/libs/filesystem/doc/reference.html
+    // https://www.boost.org/doc/libs/1_45_0/libs/filesystem/v3/doc/reference.html#path-appends
+    // https://theboostcpplibraries.com/boost.filesystem-paths#ex.filesystem_08
+    for(const boost::filesystem::path &pp : complete_path)
+    {
+        if(pp.string() == "build")
+            break;
+        if(pp.string() == "/" || pp.string() == ".")
+            continue;
+        data_path /= "/";
+        data_path /= pp;
+    }
 
-    std::vector<boost::filesystem::path> paths(boost::filesystem::directory_iterator{dataPath}, boost::filesystem::directory_iterator{});
-
+    for(const auto &f : folders)
+    {
+        if(f == "..")
+            continue;
+        data_path /= "/";
+        data_path /= f;
+    }
+    
+    std::cout << "Current directory: " << boost::filesystem::current_path() << "\n";
+    std::cout << "Data directory: " << data_path << "\n";
+    
+    std::vector<boost::filesystem::path> paths(boost::filesystem::directory_iterator{data_path}, boost::filesystem::directory_iterator{});
+    
     // sort files in accending order so playback is chronological
     sort(paths.begin(), paths.end());
 
