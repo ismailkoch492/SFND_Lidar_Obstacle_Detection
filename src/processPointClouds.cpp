@@ -434,11 +434,50 @@ typename pcl::PointCloud<PointT>::Ptr ProcessPointClouds<PointT>::loadPcd(std::s
 
 
 template<typename PointT>
-std::vector<boost::filesystem::path> ProcessPointClouds<PointT>::streamPcd(std::string dataPath)
+std::vector<boost::filesystem::path> ProcessPointClouds<PointT>::streamPcd(std::string dataPath, char** argv)
 {
+    boost::filesystem::path complete_path(boost::filesystem::system_complete(argv[0]));
+    boost::filesystem::path data_path;
+    std::vector<std::string> folders; 
+    std::string token;
+    size_t pos = 0;
+    
+    // https://stackoverflow.com/questions/14265581/parse-split-a-string-in-c-using-string-delimiter-standard-c
+    while ((pos = dataPath.find("/")) != std::string::npos)
+    {
+        token = dataPath.substr(0, pos);
+        folders.push_back(token);
+        dataPath.erase(0, pos + 1);
+    }
+    folders.push_back(dataPath);
+    
+    // https://www.boost.org/doc/libs/1_77_0/libs/filesystem/doc/tutorial.html
+    // https://www.boost.org/doc/libs/1_68_0/libs/filesystem/doc/reference.html
+    // https://www.boost.org/doc/libs/1_45_0/libs/filesystem/v3/doc/reference.html#path-appends
+    // https://theboostcpplibraries.com/boost.filesystem-paths#ex.filesystem_08
+    for(const boost::filesystem::path &pp : complete_path)
+    {
+        if(pp.string() == "build")
+            break;
+        if(pp.string() == "/" || pp.string() == ".")
+            continue;
+        data_path /= "/";
+        data_path /= pp;
+    }
 
-    std::vector<boost::filesystem::path> paths(boost::filesystem::directory_iterator{dataPath}, boost::filesystem::directory_iterator{});
-
+    for(const auto &f : folders)
+    {
+        if(f == "..")
+            continue;
+        data_path /= "/";
+        data_path /= f;
+    }
+    
+    std::cout << "Current directory: " << boost::filesystem::current_path() << "\n";
+    std::cout << "Data directory: " << data_path << "\n";
+    
+    std::vector<boost::filesystem::path> paths(boost::filesystem::directory_iterator{data_path}, boost::filesystem::directory_iterator{});
+    
     // sort files in accending order so playback is chronological
     sort(paths.begin(), paths.end());
 
