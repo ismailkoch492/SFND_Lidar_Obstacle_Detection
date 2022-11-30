@@ -49,7 +49,7 @@ The workspace provided in the SFND classroom comes preinstallated with everythin
    sudo apt install libpcl-dev
    cd ~/SFND_Lidar_Obstacle_Detection
    mkdir build && cd build
-   cmake ..
+   cmake -DCMAKE_BUILD_TYPE=Release .. 
    make
    ./environment
    ```
@@ -99,7 +99,7 @@ You can either build PCL from source (for v1.11) or use the older version.
    ```shell
    cd ~/SFND_Lidar_Obstacle_Detection
    mkdir build && cd build
-   cmake ..
+   cmake -DCMAKE_BUILD_TYPE=Release .. 
    make
    ./environment
    ```
@@ -125,7 +125,7 @@ If you get build errors related to Qt5, make sure that the path for Qt5 is corre
    ```shell
    cd ~/SFND_Lidar_Obstacle_Detection
    mkdir build && cd build
-   cmake ..
+   cmake -DCMAKE_BUILD_TYPE=Release .. 
    make
    ./environment
    ```
