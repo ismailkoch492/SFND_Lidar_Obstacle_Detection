@@ -65,13 +65,12 @@ struct KdTree3D
 	{
 		if(node != NULL)
 		{
-			bool cond[6];
-			for(int i = 0; i < 3; i++)
+			bool check = true;
+			for(size_t i = 0; i < target.size(); i++)
 			{
-				cond[2 * i] = node->point[i] >= (target[i] - distanceTol);
-				cond[2 * i + 1] = node->point[i] <= (target[i] + distanceTol);
+				check &= std::abs(node->point[i] - target[i]) <= distanceTol;
 			}
-			if( (cond[0] && cond[1]) && (cond[2] && cond[3]) && (cond[4] && cond[5]))
+			if(check)
 			{
 				float d_xyz[] = {node->point[0] - target[0], node->point[1] - target[1], node->point[2] - target[2]};
 				float distance = std::cbrt( d_xyz[0] * d_xyz[0] + d_xyz[1] * d_xyz[1] + d_xyz[2] * d_xyz[2]);
